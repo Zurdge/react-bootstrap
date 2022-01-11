@@ -3,6 +3,7 @@ import * as React from 'react';
 import { useContext, useMemo } from 'react';
 
 export interface ThemeContextValue {
+	globalPrefix?:string
   prefixes: Record<string, string>;
   dir?: string;
 }
@@ -14,10 +15,11 @@ export interface ThemeProviderProps extends Partial<ThemeContextValue> {
 const ThemeContext = React.createContext<ThemeContextValue>({ prefixes: {} });
 const { Consumer, Provider } = ThemeContext;
 
-function ThemeProvider({ prefixes = {}, dir, children }: ThemeProviderProps) {
+function ThemeProvider({ prefixes = {}, dir, globalPrefix, children }: ThemeProviderProps) {
   const contextValue = useMemo(
     () => ({
       prefixes: { ...prefixes },
+			globalPrefix,
       dir,
     }),
     [prefixes, dir],
@@ -32,11 +34,12 @@ ThemeProvider.propTypes = {
 } as any;
 
 export function useBootstrapPrefix(
+	globalPrefix:string | undefined,
   prefix: string | undefined,
   defaultPrefix: string,
 ): string {
   const { prefixes } = useContext(ThemeContext);
-  return prefix || prefixes[defaultPrefix] || defaultPrefix;
+  return (globalPrefix || "") + (prefix || prefixes[defaultPrefix] || defaultPrefix);
 }
 
 export function useIsRTL() {
@@ -53,7 +56,7 @@ function createBootstrapComponent(Component, opts) {
   const Wrapped = React.forwardRef<any, { bsPrefix?: string }>(
     ({ ...props }, ref) => {
       props[forwardRefAs] = ref;
-      const bsPrefix = useBootstrapPrefix((props as any).bsPrefix, prefix);
+      const bsPrefix = useBootstrapPrefix((props as any).globalPrefix, (props as any).bsPrefix, prefix);
       return <Component {...props} bsPrefix={bsPrefix} />;
     },
   );
